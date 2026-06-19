@@ -8,6 +8,11 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
+#genderPick { display:flex; gap:10px; margin-top:4px; }
+#genderPick .genBtn { flex:1; padding:12px; border-radius:10px; border:2px solid rgba(255,255,255,.25);
+  background:rgba(255,255,255,.08); color:#fff; font-size:15px; font-weight:700; cursor:pointer; font-family:inherit; transition:.15s; }
+#genderPick .genBtn.active { background:#2dd4bf; color:#04223a; border-color:#2dd4bf; }
+
   * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
   body { font-family:'Be Vietnam Pro','Segoe UI',system-ui,sans-serif; overflow:hidden; background:#0a1a3a; user-select:none; }
   #game { position:fixed; inset:0; overflow:hidden; }
@@ -172,6 +177,12 @@
       <option>Truyền thông – Marketing</option><option>Nhân sự (HR)</option><option>Công nghệ & Dữ liệu</option>
       <option>Kinh doanh</option><option>Khác</option>
     </select>
+    <label>Giới tính nhân vật</label>
+    <div id="genderPick">
+      <button type="button" class="genBtn active" data-gender="male">👨 Nam</button>
+      <button type="button" class="genBtn" data-gender="female">👩 Nữ</button>
+    </div>
+
     <div class="err" id="formErr"></div>
     <button class="btn" id="startBtn">Bắt đầu hành trình →</button>
   </div>
@@ -185,7 +196,9 @@
 /* ============== CẤU HÌNH ============== */
 const BG_URL = 'https://res.cloudinary.com/dcu1om99i/image/upload/v1781834013/BG_Intecom_3_zqprv9.jpg';
 const CONFIG = {
-  playerImg: 'https://res.cloudinary.com/dcu1om99i/image/upload/v1781835175/0-Nhan-vien_kguemc.png',
+  playerImgMale:   'https://res.cloudinary.com/dcu1om99i/image/upload/v1781835175/0-Nhan-vien_kguemc.png',
+  playerImgFemale: 'https://res.cloudinary.com/dcu1om99i/image/upload/v1781842949/0-Nhan-vien_nu_tou0w2.png',
+  playerImg: '', // sẽ được gán theo giới tính khi bắt đầu
   playerEmoji: '🧑‍💼',
   mapWidth: 2928,
   stations: [
@@ -351,11 +364,23 @@ function loop(){
 }
 
 const nameInput=document.getElementById('nameInput'), deptSelect=document.getElementById('deptSelect'), formErr=document.getElementById('formErr');
+
+let selectedGender='male';
+document.querySelectorAll('#genderPick .genBtn').forEach(btn=>{
+  btn.onclick=()=>{
+    document.querySelectorAll('#genderPick .genBtn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    selectedGender=btn.dataset.gender;
+  };
+});
+
 document.getElementById('startBtn').onclick=()=>{
   const name=nameInput.value.trim(), dept=deptSelect.value;
   if(!name){ formErr.textContent='Vui lòng nhập tên của bạn.'; nameInput.focus(); return; }
   if(!dept){ formErr.textContent='Vui lòng chọn bộ phận.'; return; }
-  PLAYER={name,dept};
+  PLAYER={name,dept,gender:selectedGender};
+  CONFIG.playerImg = selectedGender==='female' ? CONFIG.playerImgFemale : CONFIG.playerImgMale;
+  CONFIG.playerEmoji = selectedGender==='female' ? '👩‍💼' : '🧑‍💼';
   document.getElementById('start').style.display='none';
   document.getElementById('hint').textContent=`Chào ${name} (${dept})! ⬅➡ Di chuyển để học`;
   document.getElementById('minimap').style.display='flex';
