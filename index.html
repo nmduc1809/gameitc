@@ -23,7 +23,8 @@
   .staff.done .bubble { background:#22c55e; color:#fff; animation:none; }
   @keyframes bob { 0%,100%{ transform:translateY(0);} 50%{ transform:translateY(-7px);} }
 
-  .chatBubble { position:absolute; bottom:440px; transform:translateX(-50%) scale(.6);
+  /* === bong bóng chat: đẩy cao hơn để không che đầu nhân vật === */
+  .chatBubble { position:absolute; bottom:500px; transform:translateX(-50%) scale(.6);
     background:#fff; color:#0a1a3a; font-size:13px; font-weight:600; padding:8px 14px; border-radius:14px;
     white-space:nowrap; box-shadow:0 6px 16px rgba(0,0,0,.25); opacity:0; transition:opacity .25s, transform .25s; pointer-events:none; z-index:6; max-width:240px; }
   .chatBubble::after { content:''; position:absolute; bottom:-7px; left:50%; transform:translateX(-50%); border:7px solid transparent; border-top-color:#fff; border-bottom:0; }
@@ -51,6 +52,23 @@
   #dpad { position:fixed; bottom:24px; left:0; right:0; z-index:21; display:flex; justify-content:space-between; padding:0 28px; }
   .arrow { width:74px; height:74px; border-radius:50%; background:rgba(255,255,255,.18); border:2px solid rgba(255,255,255,.4); color:#fff; font-size:34px; font-weight:800; display:flex; align-items:center; justify-content:center; cursor:pointer; }
   .arrow:active { background:rgba(45,212,191,.5); }
+
+  /* === thanh hướng dẫn di chuyển === */
+  #moveGuide { position:fixed; left:50%; bottom:14px; transform:translateX(-50%);
+    display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:center;
+    background:rgba(10,26,58,.82); backdrop-filter:blur(6px); color:#dbe7ff;
+    font-size:13px; font-weight:600; padding:9px 18px; border-radius:30px;
+    border:1px solid rgba(120,170,255,.35); box-shadow:0 6px 20px rgba(0,0,0,.35);
+    z-index:19; pointer-events:none; max-width:62vw; display:none; }
+  #moveGuide.show { display:flex; }
+  #moveGuide .mg-sep { opacity:.45; }
+  #moveGuide .mg-key { display:inline-block; min-width:20px; text-align:center;
+    background:#1d3e80; color:#fff; border-radius:6px; padding:2px 7px; margin:0 2px;
+    font-size:12px; border:1px solid rgba(120,170,255,.45); box-shadow:0 2px 0 rgba(0,0,0,.25); }
+  @media (max-width:680px){
+    #moveGuide { font-size:11px; padding:7px 12px; bottom:108px; gap:6px; max-width:92vw; }
+    #moveGuide .mg-key { padding:1px 5px; min-width:16px; }
+  }
 
   #start { position:fixed; inset:0; z-index:50; background:linear-gradient(160deg,#0a1a3a,#123a7a); color:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:24px; }
   #start h1 { font-size:30px; margin-bottom:6px; }
@@ -122,6 +140,16 @@
 <div id="minimap"><div class="track" id="mtrack"><div class="mplayer" id="mplayer">🔻</div></div></div>
 <button id="actBtn">Bấm để học</button>
 <div id="dpad"><div class="arrow" id="leftBtn">‹</div><div class="arrow" id="rightBtn">›</div></div>
+
+<!-- thanh hướng dẫn di chuyển -->
+<div id="moveGuide">
+  <span class="mg-item"><span class="mg-key">←</span><span class="mg-key">→</span> hoặc <span class="mg-key">A</span><span class="mg-key">D</span> để di chuyển</span>
+  <span class="mg-sep">•</span>
+  <span class="mg-item">Hoặc bấm nút <span class="mg-key">‹</span> <span class="mg-key">›</span> hai bên</span>
+  <span class="mg-sep">•</span>
+  <span class="mg-item">Đến gần đồng nghiệp rồi bấm <span class="mg-key">📖 Bấm để học</span></span>
+</div>
+
 <div id="toast"></div>
 <canvas id="confetti"></canvas>
 
@@ -237,6 +265,7 @@ const QUESTIONS = [
 const world=document.getElementById('world'), player=document.getElementById('player');
 const actBtn=document.getElementById('actBtn'), panel=document.getElementById('panel');
 const stage=document.getElementById('stage'), voicePlayer=document.getElementById('voicePlayer');
+const moveGuide=document.getElementById('moveGuide');
 world.style.width=CONFIG.mapWidth+'px';
 let PLAYER={name:'',dept:''};
 
@@ -313,6 +342,7 @@ document.getElementById('startBtn').onclick=()=>{
   document.getElementById('start').style.display='none';
   document.getElementById('hint').textContent=`Chào ${name} (${dept})! ⬅➡ Di chuyển để học`;
   document.getElementById('minimap').style.display='flex';
+  moveGuide.classList.add('show');
   renderPlayer(); placePlayer(); updateCamera(); updateMiniPlayer(); checkNear();
   running=true; loop();
 };
