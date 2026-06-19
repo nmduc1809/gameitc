@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>VTC Intecom – Hành trình Intecomer (2D)</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body { font-family:'Segoe UI',system-ui,sans-serif; overflow:hidden; background:#0a1a3a; user-select:none; }
+  #game { position:fixed; inset:0; overflow:hidden; }
+
+  #world { position:absolute; top:0; left:0; height:100%;
+    background-size:2928px auto; background-repeat:no-repeat;
+    background-position:left bottom; background-color:#0a1a3a; }
+  #floor { position:absolute; bottom:0; left:0; height:120px; width:100%;
+    background:linear-gradient(180deg, rgba(10,26,58,0), rgba(6,18,46,.35)); pointer-events:none; }
+
+  .staff { position:absolute; bottom:90px; transform:translateX(-50%); display:flex; flex-direction:column; align-items:center; }
+  .staff .avatar { font-size:120px; line-height:1; filter:drop-shadow(0 12px 18px rgba(0,0,0,.4)); }
+  .staff .visual img { height:340px; max-height:52vh; object-fit:contain; filter:drop-shadow(0 12px 18px rgba(0,0,0,.4)); display:block; }
+  .staff .name { background:rgba(255,255,255,.94); color:#0a1a3a; font-weight:700; font-size:13px; padding:4px 12px; border-radius:14px; margin-top:6px; white-space:nowrap; }
+  .staff .bubble { background:#fbbf24; color:#04223a; font-weight:800; font-size:12px; padding:5px 12px; border-radius:14px; margin-bottom:6px; animation:bob 1.2s ease-in-out infinite; }
+  .staff.done .bubble { background:#22c55e; color:#fff; animation:none; }
+  @keyframes bob { 0%,100%{ transform:translateY(0);} 50%{ transform:translateY(-7px);} }
+
+  .chatBubble { position:absolute; bottom:440px; transform:translateX(-50%) scale(.6);
+    background:#fff; color:#0a1a3a; font-size:13px; font-weight:600; padding:8px 14px; border-radius:14px;
+    white-space:nowrap; box-shadow:0 6px 16px rgba(0,0,0,.25); opacity:0; transition:opacity .25s, transform .25s; pointer-events:none; z-index:6; max-width:240px; }
+  .chatBubble::after { content:''; position:absolute; bottom:-7px; left:50%; transform:translateX(-50%); border:7px solid transparent; border-top-color:#fff; border-bottom:0; }
+  .chatBubble.show { opacity:1; transform:translateX(-50%) scale(1); }
+
+  #player { position:absolute; bottom:90px; transform:translateX(-50%); z-index:5; text-align:center; }
+  #player .avatar { font-size:110px; line-height:1; filter:drop-shadow(0 10px 14px rgba(0,0,0,.45)); }
+  #player img { height:340px; max-height:52vh; filter:drop-shadow(0 10px 14px rgba(0,0,0,.45)); display:block; }
+  #player .ptag { background:#2dd4bf; color:#04223a; font-weight:700; font-size:12px; padding:3px 10px; border-radius:12px; margin-top:4px; display:inline-block; }
+  @keyframes walkBob { 0%{transform:translateY(0) rotate(0);} 25%{transform:translateY(-7px) rotate(-1.5deg);} 50%{transform:translateY(0) rotate(0);} 75%{transform:translateY(-7px) rotate(1.5deg);} 100%{transform:translateY(0) rotate(0);} }
+  #player.walking img { animation:walkBob .45s ease-in-out infinite; }
+
+  #progress { position:fixed; top:14px; right:14px; z-index:20; background:rgba(10,26,58,.85); color:#fff; padding:8px 16px; border-radius:20px; font-size:14px; font-weight:700; border:1px solid rgba(255,255,255,.25); }
+  #hint { position:fixed; top:14px; left:14px; z-index:20; color:#fff; font-size:13px; background:rgba(10,26,58,.7); padding:8px 14px; border-radius:14px; text-shadow:0 1px 3px #000; max-width:50vw; }
+
+  #minimap { position:fixed; top:54px; left:50%; transform:translateX(-50%); z-index:20; background:rgba(10,26,58,.8); border:1px solid rgba(255,255,255,.2); border-radius:20px; padding:8px 14px; display:none; align-items:center; }
+  #minimap .track { position:relative; width:240px; height:8px; background:rgba(255,255,255,.18); border-radius:6px; }
+  #minimap .mstop { position:absolute; top:50%; width:14px; height:14px; border-radius:50%; transform:translate(-50%,-50%); background:#fbbf24; border:2px solid #04223a; }
+  #minimap .mstop.done { background:#22c55e; }
+  #minimap .mstop::after { content:attr(data-id); position:absolute; top:16px; left:50%; transform:translateX(-50%); font-size:9px; color:#cfe0ff; font-weight:700; }
+  #minimap .mplayer { position:absolute; top:50%; transform:translate(-50%,-50%); font-size:14px; transition:left .1s linear; }
+
+  #actBtn { position:fixed; bottom:120px; left:50%; transform:translateX(-50%); z-index:21; background:#2dd4bf; color:#04223a; border:none; padding:14px 30px; border-radius:30px; font-weight:800; font-size:16px; cursor:pointer; display:none; box-shadow:0 8px 24px rgba(45,212,191,.6); }
+
+  #dpad { position:fixed; bottom:24px; left:0; right:0; z-index:21; display:flex; justify-content:space-between; padding:0 28px; }
+  .arrow { width:74px; height:74px; border-radius:50%; background:rgba(255,255,255,.18); border:2px solid rgba(255,255,255,.4); color:#fff; font-size:34px; font-weight:800; display:flex; align-items:center; justify-content:center; cursor:pointer; }
+  .arrow:active { background:rgba(45,212,191,.5); }
+
+  #start { position:fixed; inset:0; z-index:50; background:linear-gradient(160deg,#0a1a3a,#123a7a); color:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:24px; }
+  #start h1 { font-size:30px; margin-bottom:6px; }
+  #start .sub { font-size:15px; opacity:.85; margin-bottom:24px; line-height:1.6; }
+  #start .form { background:rgba(255,255,255,.08); padding:22px; border-radius:16px; width:100%; max-width:360px; border:1px solid rgba(255,255,255,.15); }
+  #start label { display:block; text-align:left; font-size:13px; opacity:.85; margin:10px 0 5px; }
+  #start input, #start select { width:100%; padding:12px 14px; border-radius:10px; border:none; font-size:15px; color:#0a1a3a; outline:none; }
+  #start .btn { background:#2dd4bf; color:#04223a; border:none; padding:14px 40px; margin-top:18px; font-size:17px; font-weight:800; border-radius:30px; cursor:pointer; width:100%; box-shadow:0 8px 24px rgba(45,212,191,.5); }
+  #start .err { color:#fca5a5; font-size:12px; margin-top:8px; min-height:16px; }
+  #start .key { background:rgba(255,255,255,.15); padding:2px 8px; border-radius:5px; font-weight:700; }
+  #start .ctrls { margin-top:18px; font-size:12px; opacity:.65; }
+
+  #panel { position:fixed; inset:0; z-index:40; display:none; background:rgba(4,16,40,.88); backdrop-filter:blur(5px); align-items:center; justify-content:center; padding:20px; }
+  .stage { display:flex; align-items:flex-end; max-width:1000px; width:100%; }
+  .stage.flip { flex-direction:row-reverse; }
+  .stageChar { flex:0 0 300px; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; }
+  .stageChar img { width:100%; max-height:70vh; object-fit:contain; filter:drop-shadow(0 16px 24px rgba(0,0,0,.5)); animation:charIn .4s ease; }
+  .stageChar .avatar { font-size:160px; }
+  .stageChar .cname { background:#2dd4bf; color:#04223a; font-weight:800; font-size:13px; padding:5px 14px; border-radius:16px; margin-top:8px; }
+  @keyframes charIn { from{ transform:translateY(40px) scale(.85); opacity:0;} to{ transform:translateY(0) scale(1); opacity:1;} }
+  .card { background:#fff; color:#1a2a44; flex:1 1 auto; max-width:600px; border-radius:18px; padding:26px 30px; max-height:84vh; overflow-y:auto; box-shadow:0 30px 80px rgba(0,0,0,.5); animation:pop .25s ease; }
+  @keyframes pop { from{ transform:scale(.94); opacity:0;} to{ transform:scale(1); opacity:1;} }
+  .card .tag { display:inline-block; background:#e6f9f6; color:#0a8f7e; font-size:12px; font-weight:700; padding:4px 12px; border-radius:20px; margin-bottom:12px; }
+  .card h2 { font-size:21px; margin-bottom:14px; color:#0a1a3a; }
+  .voiceBar { display:flex; align-items:center; gap:10px; background:#e6f9f6; border-radius:10px; padding:8px 12px; margin-bottom:14px; }
+  .voiceBar button { background:#0a8f7e; color:#fff; border:none; border-radius:20px; padding:6px 14px; font-weight:700; font-size:13px; cursor:pointer; }
+  .voiceBar span { font-size:12px; color:#0a8f7e; }
+  .narration { background:#f4f7fc; border-left:4px solid #2dd4bf; padding:14px 16px; border-radius:8px; font-size:15px; line-height:1.7; margin-bottom:18px; font-style:italic; }
+  .channels { display:flex; flex-wrap:wrap; gap:10px; margin-bottom:18px; }
+  .chan { background:#f0f4fa; border-radius:10px; padding:10px 14px; font-size:13px; flex:1 1 45%; }
+  .chan b { color:#0a1a3a; }
+
+  /* thẻ văn hóa */
+  .cultGrid { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:16px; }
+  .cultCard { background:#f0f4fa; border-radius:14px; overflow:hidden; cursor:pointer; border:2px solid transparent; transition:.2s; }
+  .cultCard:hover { border-color:#2dd4bf; box-shadow:0 8px 20px rgba(45,212,191,.25); transform:translateY(-3px); }
+  .cultCard.open { border-color:#2dd4bf; }
+  .cultCard .thumb { width:100%; height:110px; background-size:cover; background-position:center; position:relative; }
+  .cultCard .thumb::after { content:'👆 Bấm xem'; position:absolute; bottom:6px; right:8px; background:rgba(4,16,40,.7); color:#fff; font-size:10px; font-weight:700; padding:2px 8px; border-radius:10px; }
+  .cultCard.open .thumb::after { content:'✓ Đã mở'; background:rgba(34,197,94,.85); }
+  .cultCard .body { padding:10px 12px; }
+  .cultCard .ctitle { font-weight:800; font-size:14px; color:#0a1a3a; }
+  .cultCard .cdesc { font-size:12px; color:#50607a; line-height:1.5; margin-top:5px; max-height:0; overflow:hidden; transition:max-height .3s ease; }
+  .cultCard.open .cdesc { max-height:200px; }
+  .cultCard .caction { font-size:12px; color:#0a8f7e; font-weight:600; margin-top:8px; background:#e6f9f6; padding:6px 8px; border-radius:8px; display:none; }
+  .cultCard.open .caction { display:block; }
+  .cultHint { font-size:12px; color:#94a3b8; margin-bottom:14px; }
+
+  .opt { display:block; width:100%; text-align:left; background:#f0f4fa; border:2px solid transparent; padding:12px 16px; border-radius:10px; margin-bottom:10px; cursor:pointer; font-size:14px; color:#1a2a44; transition:.15s; }
+  .opt:hover { border-color:#2dd4bf; }
+  .opt:disabled { cursor:default; }
+  .opt.correct { background:#d8f5e3; border-color:#22c55e; }
+  .opt.wrong { background:#fde4e4; border-color:#ef4444; }
+  .explain { font-size:13px; background:#eef6ff; padding:12px; border-radius:8px; margin-top:6px; line-height:1.6; display:none; }
+  .close { margin-top:14px; background:#0a1a3a; color:#fff; border:none; padding:12px 28px; border-radius:26px; font-weight:700; cursor:pointer; font-size:14px; width:100%; }
+  #toast { position:fixed; bottom:110px; left:50%; transform:translateX(-50%); background:#22c55e; color:#fff; padding:12px 26px; border-radius:30px; font-weight:700; z-index:60; display:none; box-shadow:0 8px 24px rgba(34,197,94,.5); }
+
+  @media (max-width:680px){ .stageChar{ display:none; } .card{ max-width:100%; } #minimap .track{ width:160px; } .cultGrid{ grid-template-columns:1fr; } .cultCard .thumb{ height:130px; } }
+  #confetti { position:fixed; inset:0; z-index:55; pointer-events:none; display:none; }
+</style>
+</head>
+<body>
+<div id="game">
+  <div id="world"><div id="floor"></div><div id="player"></div></div>
+</div>
+
+<div id="progress">Tiến độ: <span id="pct">0</span>/5</div>
+<div id="hint">⬅➡ Di chuyển để gặp đồng nghiệp</div>
+<div id="minimap"><div class="track" id="mtrack"><div class="mplayer" id="mplayer">🔻</div></div></div>
+<button id="actBtn">Bấm để học</button>
+<div id="dpad"><div class="arrow" id="leftBtn">‹</div><div class="arrow" id="rightBtn">›</div></div>
+<div id="toast"></div>
+<canvas id="confetti"></canvas>
+
+<div id="start">
+  <h1>Chào mừng đến VTC Intecom!</h1>
+  <div class="sub">Hôm nay là ngày đầu tiên của bạn.<br>Hãy giới thiệu một chút trước khi bắt đầu nhé.</div>
+  <div class="form">
+    <label for="nameInput">Tên của bạn</label>
+    <input id="nameInput" type="text" placeholder="VD: Nguyễn Văn A" maxlength="30" autocomplete="off">
+    <label for="deptSelect">Bộ phận</label>
+    <select id="deptSelect">
+      <option value="">— Chọn bộ phận —</option>
+      <option>Phát hành Game</option><option>Sản xuất Game</option><option>eSports & Cộng đồng</option>
+      <option>Truyền thông – Marketing</option><option>Nhân sự (HR)</option><option>Công nghệ & Dữ liệu</option>
+      <option>Kinh doanh</option><option>Khác</option>
+    </select>
+    <div class="err" id="formErr"></div>
+    <button class="btn" id="startBtn">Bắt đầu hành trình →</button>
+  </div>
+  <div class="ctrls">Di chuyển: <span class="key">←</span> <span class="key">→</span> hoặc nút trên màn hình</div>
+</div>
+
+<div id="panel"><div class="stage" id="stage"></div></div>
+<audio id="voicePlayer"></audio>
+
+<script>
+/* ============== CẤU HÌNH ============== */
+const BG_URL = 'https://res.cloudinary.com/dcu1om99i/image/upload/v1781834013/BG_Intecom_3_zqprv9.jpg';
+const CONFIG = {
+  playerImg: 'https://res.cloudinary.com/dcu1om99i/image/upload/v1781835175/0-Nhan-vien_kguemc.png',
+  playerEmoji: '🧑‍💼',
+  mapWidth: 2928,
+  stations: [
+    { id:'A', x:500,  img:'https://res.cloudinary.com/dcu1om99i/image/upload/v1781835175/2-Tram-A-Phong-Game_gytyhx.png', emoji:'🧑‍💻', name:'Anh Minh – Phòng Game',
+      voice:'https://res.cloudinary.com/dcu1om99i/video/upload/v1781835657/A_fbtust.mp3', greet:'Chào bạn mới! Ghé phòng Game nhé 🎮' },
+    { id:'B', x:1050, img:'https://res.cloudinary.com/dcu1om99i/image/upload/v1781835176/3-Tram-B-Truyen-thong_jvm5e8.png', emoji:'👩‍💼', name:'Chị Lan – Truyền thông',
+      voice:'https://res.cloudinary.com/dcu1om99i/video/upload/v1781838022/Dan_nhap_wmxssv.mp3', greet:'Hi! Mình ở Truyền thông nè 📣' },
+    { id:'C', x:1600, img:'https://res.cloudinary.com/dcu1om99i/image/upload/v1781835176/4-Tram-C-HR_ab3ii0.png', emoji:'🧑‍🏫', name:'Anh Hùng – HR', voice:'', greet:'Chào em, cần gì cứ hỏi HR nhé!' },
+    { id:'D', x:2150, img:'https://res.cloudinary.com/dcu1om99i/image/upload/v1781835176/5-Tram-D-CSR_lrla8o.png', emoji:'👩‍❤️‍👨', name:'Chị Mai – CSR', voice:'', greet:'Cùng lan tỏa điều tốt đẹp nha ❤️' },
+    { id:'Q', x:2680, img:'https://res.cloudinary.com/dcu1om99i/image/upload/v1781835176/6-Tram-Q-Le-tan_yvolsu.png', emoji:'💁', name:'Lễ tân – Kiểm tra', voice:'', greet:'Sẵn sàng kiểm tra cuối bài chưa? ✦' },
+  ]
+};
+
+const CONTENT = {
+  A: () => `<span class="tag">MODULE 3.A — TINH THẦN INTECOMER</span>
+    <h2>Một khi là Intecomer, mãi mãi là người nhà</h2>
+    <div class="narration">"Có một điều thú vị ở VTC Intecom: không ai thực sự 'rời' khỏi Intecom. Dù bạn chuyển công tác hay nghỉ hưu — một khi đã là Intecomer, mãi mãi là anh em một nhà. Đó không phải slogan."</div>
+    <p style="font-size:14px;line-height:1.7;color:#50607a">VTC Intecom là một trong những đơn vị tiên phong của ngành game Việt Nam — nơi tình thân là cách mọi người đối xử với nhau mỗi ngày.</p>`,
+  B: () => {
+    const cards = [
+      { t:'Trẻ trung – Năng động',
+        img:'https://res.cloudinary.com/dcu1om99i/image/upload/v1781836997/1_Tre_trung_nang_dong_ckd7ah.jpg',
+        d:'Tinh thần không bao giờ già — luôn sẵn sàng thử cái mới, chạy nhanh và thích nghi linh hoạt.',
+        a:'→ Tự nguyện xung phong nhận thử việc mới, không chờ được giao.',
+        voice:'https://res.cloudinary.com/dcu1om99i/video/upload/v1781838023/Tre_trung_nang_dong_tdgyrz.mp3' },
+      { t:'Sáng tạo – Tài năng',
+        img:'https://res.cloudinary.com/dcu1om99i/image/upload/v1781836997/2_Sang_tao_tai_nang_gox509.jpg',
+        d:'Mỗi người mang một thế mạnh riêng — sự khác biệt được trân trọng, không bị san phẳng.',
+        a:'→ Chủ động đề xuất ý tưởng cải tiến dù bạn chỉ là nhân viên mới nhất phòng.',
+        voice:'https://res.cloudinary.com/dcu1om99i/video/upload/v1781838023/Sang_tao_tai_nang_ygmkal.mp3' },
+      { t:'Cởi mở – Gắn kết',
+        img:'https://res.cloudinary.com/dcu1om99i/image/upload/v1781836997/3_Coi_mo_gan_ket_cmvpf9.jpg',
+        d:'Nói thẳng, nghe thật — môi trường nơi phản hồi được xem là món quà, không phải chỉ trích.',
+        a:'→ Tham gia nhóm Facebook nội bộ, comment, chia sẻ và tương tác với đồng nghiệp.',
+        voice:'https://res.cloudinary.com/dcu1om99i/video/upload/v1781838024/Coi_mo_gan_ket_otqmqr.mp3' },
+      { t:'Văn hóa Gia đình',
+        img:'https://res.cloudinary.com/dcu1om99i/image/upload/v1781836998/4_Van_hoa_gia_dinh_v06bah.jpg',
+        d:'Không phân biệt cấp bậc khi cần hỗ trợ nhau — lãnh đạo và nhân viên cùng ngồi ăn trưa, cùng xắn tay áo khi deadline đến.',
+        a:'→ Hỏi đồng nghiệp cần giúp gì trước khi bạn về đúng giờ trong tuần đầu.',
+        voice:'https://res.cloudinary.com/dcu1om99i/video/upload/v1781838024/Van_hoa_gia_dinh_pblbe2.mp3' },
+    ];
+    const cardsHTML = cards.map((c,i) => `
+      <div class="cultCard" data-idx="${i}" data-voice="${c.voice}">
+        <div class="thumb" style="background-image:url('${c.img}')"></div>
+        <div class="body">
+          <div class="ctitle">${c.t}</div>
+          <div class="cdesc">${c.d}</div>
+          <div class="caction">${c.a}</div>
+        </div>
+      </div>`).join('');
+    return `<span class="tag">4 ĐẶC TRƯNG VĂN HÓA INTECOMER</span>
+      <h2>"Chất Intecomer" gói trong 4 điều</h2>
+      <div class="narration">"Mời bạn bấm vào từng tấm thẻ để khám phá. Đặc trưng nào khiến bạn ấn tượng nhất, và vì sao?"</div>
+      <div class="cultHint" id="cultHint">💡 Bấm mở cả 4 thẻ để tiếp tục. <b>Đã mở: <span id="openedCount">0</span>/4</b></div>
+      <div class="cultGrid">${cardsHTML}</div>`;
+  },
+  C: () => `<span class="tag">KÊNH NỘI BỘ & LỊCH VĂN HÓA</span>
+    <h2>Những sợi dây kết nối ngôi nhà</h2>
+    <div class="narration">"Một ngôi nhà lớn cần những sợi dây kết nối mọi người."</div>
+    <div class="channels">
+      <div class="chan"><b>📘 Group FB 'Gia đình Intecom'</b><br>Giao lưu & cập nhật nhanh nhất.</div>
+      <div class="chan"><b>📻 Hiradio</b><br>Phát chiều thứ Sáu – quà nhạc & tin tuần.</div>
+      <div class="chan"><b>📰 Intecom News</b><br>Bản tin chính thức.</div>
+      <div class="chan"><b>🎂 Sinh nhật 6/1</b><br>Ngày lễ lớn nhất của đại gia đình.</div>
+    </div>`,
+  D: () => `<span class="tag">MODULE 3.C — HƯỚNG VỀ CỘNG ĐỒNG</span>
+    <h2>Tình thân lan tỏa ra cả cộng đồng</h2>
+    <div class="narration">"Tình thân ở nơi này không dừng lại bên trong bốn bức tường văn phòng — nó lan tỏa ra cả cộng đồng."</div>
+    <ul style="font-size:14px;line-height:1.9;color:#50607a;padding-left:18px">
+      <li><b>Quỹ Khát Vọng & Quỹ Trái Tim</b> — trao điều tốt đẹp đến hoàn cảnh khó khăn.</li>
+      <li><b>Từ thiện thường niên</b> — vùng cao, bệnh viện, địa phương khó khăn.</li>
+      <li><b>Lễ gặp mặt Gia đình Intecom</b> — mời phụ huynh CBCNV thăm nơi làm việc của con.</li>
+    </ul>`
+};
+const QUESTIONS = [
+  { q:'Kênh nội bộ nào phát chiều thứ Sáu hàng tuần?', opts:['Intecom News','Group Facebook','Hiradio','Website nội bộ'], correct:2, ex:'Hiradio phát chiều thứ Sáu — gửi quà âm nhạc và tin tức nổi bật tuần.' },
+  { q:'Đâu KHÔNG phải 4 đặc trưng văn hóa VTC Intecom?', opts:['Trẻ trung – Năng động','Cởi mở – Gắn kết','Kỷ luật – Tuân thủ','Sáng tạo – Tài năng'], correct:2, ex:'"Kỷ luật – Tuân thủ" không nằm trong 4 đặc trưng.' },
+  { q:'Sinh nhật Công ty VTC Intecom là ngày nào?', opts:['2/9','6/1','20/10','8/3'], correct:1, ex:'VTC Intecom thành lập 06/01/2006 — sinh nhật là 6/1.' },
+  { q:'Tuần đầu, muốn cập nhật tin & giao lưu nhanh nhất, bạn nên?', opts:['Đọc báo cáo tài chính','Xin admin thêm vào Group FB "Gia đình Intecom"','Chờ kỳ họp toàn công ty','Gửi email cho toàn bộ CBCNV'], correct:1, ex:'Group Facebook "Gia đình Intecom" là kênh nhanh nhất.' }
+];
+
+/* ============== KHỞI TẠO ============== */
+const world=document.getElementById('world'), player=document.getElementById('player');
+const actBtn=document.getElementById('actBtn'), panel=document.getElementById('panel');
+const stage=document.getElementById('stage'), voicePlayer=document.getElementById('voicePlayer');
+world.style.width=CONFIG.mapWidth+'px';
+let PLAYER={name:'',dept:''};
+
+if(BG_URL){ const t=new Image(); t.onload=()=>world.style.backgroundImage=`url("${BG_URL}")`; t.onerror=()=>console.error('BG lỗi'); t.src=BG_URL; }
+
+function renderPlayer(){
+  player.innerHTML='';
+  if(CONFIG.playerImg){ const im=new Image(); im.onerror=()=>player.insertAdjacentHTML('afterbegin',`<div class="avatar">${CONFIG.playerEmoji}</div>`); player.appendChild(im); im.src=CONFIG.playerImg; }
+  else player.innerHTML=`<div class="avatar">${CONFIG.playerEmoji}</div>`;
+  const tag=document.createElement('div'); tag.className='ptag'; tag.textContent=PLAYER.name||'Bạn'; player.appendChild(tag);
+}
+
+const staffEls={}, chatEls={};
+CONFIG.stations.forEach(s=>{
+  const el=document.createElement('div'); el.className='staff'; el.style.left=s.x+'px';
+  el.innerHTML=`<div class="bubble">Học ✦</div><div class="visual"></div><div class="name">${s.name}</div>`;
+  const vis=el.querySelector('.visual');
+  if(s.img){ const im=new Image(); im.onerror=()=>vis.innerHTML=`<div class="avatar">${s.emoji}</div>`; vis.appendChild(im); im.src=s.img; }
+  else vis.innerHTML=`<div class="avatar">${s.emoji}</div>`;
+  world.appendChild(el); staffEls[s.id]=el;
+  const ch=document.createElement('div'); ch.className='chatBubble'; ch.style.left=s.x+'px'; ch.textContent=s.greet||'Xin chào!';
+  world.appendChild(ch); chatEls[s.id]=ch;
+});
+
+const mtrack=document.getElementById('mtrack'), mplayer=document.getElementById('mplayer');
+CONFIG.stations.forEach(s=>{ const d=document.createElement('div'); d.className='mstop'; d.dataset.id=s.id; d.style.left=(s.x/CONFIG.mapWidth*100)+'%'; d.id='m_'+s.id; mtrack.appendChild(d); });
+
+let playerX=120; const SPEED=7; let completed=0; const doneSet=new Set(); let running=false; const greeted=new Set();
+
+function placePlayer(){ player.style.left=playerX+'px'; }
+function updateCamera(){ const c=window.innerWidth/2; let o=c-playerX; o=Math.min(0,Math.max(window.innerWidth-CONFIG.mapWidth,o)); world.style.transform=`translateX(${o}px)`; }
+function updateMiniPlayer(){ mplayer.style.left=(playerX/CONFIG.mapWidth*100)+'%'; }
+function showGreet(s){ const ch=chatEls[s.id]; ch.classList.add('show'); clearTimeout(ch._tm); ch._tm=setTimeout(()=>ch.classList.remove('show'),2500); }
+
+let nearStation=null;
+function checkNear(){
+  nearStation=null;
+  for(const s of CONFIG.stations){
+    const dist=Math.abs(s.x-playerX);
+    if(dist<150 && !greeted.has(s.id)){ greeted.add(s.id); showGreet(s); }
+    if(dist<120 && !nearStation){ nearStation=s; }
+    if(dist>200) greeted.delete(s.id);
+  }
+  if(nearStation){ actBtn.style.display='block'; actBtn.textContent=doneSet.has(nearStation.id)?'✅ Đã học — xem lại':'📖 Bấm để học'; }
+  else actBtn.style.display='none';
+}
+
+const keys={}; addEventListener('keydown',e=>keys[e.code]=true); addEventListener('keyup',e=>keys[e.code]=false);
+let holdDir=0;
+function bindHold(el,dir){ const d=e=>{e.preventDefault();holdDir=dir;}, u=e=>{e.preventDefault();holdDir=0;};
+  el.addEventListener('mousedown',d); el.addEventListener('touchstart',d,{passive:false}); el.addEventListener('mouseup',u); el.addEventListener('mouseleave',u); el.addEventListener('touchend',u); el.addEventListener('touchcancel',u); }
+bindHold(document.getElementById('leftBtn'),-1); bindHold(document.getElementById('rightBtn'),1);
+
+function loop(){
+  if(!running) return;
+  let dir=holdDir;
+  if(keys['ArrowLeft']||keys['KeyA']) dir=-1;
+  if(keys['ArrowRight']||keys['KeyD']) dir=1;
+  if(dir!==0 && panel.style.display!=='flex'){
+    playerX+=dir*SPEED; playerX=Math.max(80,Math.min(CONFIG.mapWidth-80,playerX));
+    player.style.transform=`translateX(-50%) scaleX(${dir>0?1:-1})`;
+    placePlayer(); updateCamera(); updateMiniPlayer(); checkNear();
+    player.classList.add('walking');
+  } else player.classList.remove('walking');
+  requestAnimationFrame(loop);
+}
+
+const nameInput=document.getElementById('nameInput'), deptSelect=document.getElementById('deptSelect'), formErr=document.getElementById('formErr');
+document.getElementById('startBtn').onclick=()=>{
+  const name=nameInput.value.trim(), dept=deptSelect.value;
+  if(!name){ formErr.textContent='Vui lòng nhập tên của bạn.'; nameInput.focus(); return; }
+  if(!dept){ formErr.textContent='Vui lòng chọn bộ phận.'; return; }
+  PLAYER={name,dept};
+  document.getElementById('start').style.display='none';
+  document.getElementById('hint').textContent=`Chào ${name} (${dept})! ⬅➡ Di chuyển để học`;
+  document.getElementById('minimap').style.display='flex';
+  renderPlayer(); placePlayer(); updateCamera(); updateMiniPlayer(); checkNear();
+  running=true; loop();
+};
+
+/* voice */
+let lastIntroVoice='';
+function playVoice(url){ stopVoice(); if(!url||url==='undefined') return; voicePlayer.src=url; voicePlayer.play().catch(()=>{}); }
+function stopVoice(){ voicePlayer.pause(); voicePlayer.currentTime=0; }
+window.__replayVoice=()=>{ if(lastIntroVoice){ playVoice(lastIntroVoice); } };
+
+actBtn.onclick=()=>{ if(nearStation) openStation(nearStation); };
+function charVisual(s){ return s.img ? `<img src="${s.img}" alt="">` : `<div class="avatar">${s.emoji}</div>`; }
+
+function openStation(s){
+  if(s.id==='Q'){ renderQuiz(s); panel.style.display='flex'; return; }
+  if(s.id==='B'){ openStationB(s); return; }
+  const flip = s.x > CONFIG.mapWidth/2;
+  const charHTML=`<div class="stageChar">${charVisual(s)}<div class="cname">${s.name}</div></div>`;
+  const voiceBar=s.voice?`<div class="voiceBar"><button onclick="window.__replayVoice()">🔊 Nghe lại</button><span>Đang đọc lời giảng...</span></div>`:'';
+  stage.className='stage'+(flip?' flip':'');
+  stage.innerHTML=charHTML+`<div class="card">${CONTENT[s.id]()}${voiceBar}<button class="close" onclick="window.__close()">Đã hiểu, tiếp tục →</button></div>`;
+  markDone(s.id);
+  lastIntroVoice=s.voice||''; playVoice(s.voice);
+  panel.style.display='flex';
+}
+
+/* trạm B: voice từng thẻ + bắt buộc mở đủ 4 thẻ */
+function openStationB(s){
+  const flip = s.x > CONFIG.mapWidth/2;
+  const charHTML=`<div class="stageChar">${charVisual(s)}<div class="cname">${s.name}</div></div>`;
+  const voiceBar=s.voice?`<div class="voiceBar"><button onclick="window.__replayVoice()">🔊 Nghe lại lời dẫn</button><span>Bấm từng thẻ để nghe & xem nội dung</span></div>`:'';
+  stage.className='stage'+(flip?' flip':'');
+  stage.innerHTML=charHTML+`<div class="card">${CONTENT.B()}${voiceBar}
+    <button class="close" id="bContinue" disabled style="opacity:.4">Hãy mở đủ 4 thẻ để tiếp tục</button></div>`;
+  panel.style.display='flex';
+  lastIntroVoice=s.voice||''; playVoice(s.voice);
+
+  const opened=new Set(); const cont=document.getElementById('bContinue');
+  stage.querySelectorAll('.cultCard').forEach(cardEl=>{
+    cardEl.onclick=()=>{
+      cardEl.classList.toggle('open');
+      if(cardEl.classList.contains('open')){
+        opened.add(cardEl.dataset.idx);
+        const v=cardEl.dataset.voice; if(v && v!=='undefined') playVoice(v);
+      }
+      document.getElementById('openedCount').textContent=opened.size;
+      if(opened.size>=4){
+        cont.disabled=false; cont.style.opacity='1'; cont.textContent='Đã hiểu, tiếp tục →';
+        cont.onclick=()=>window.__close();
+        document.getElementById('cultHint').innerHTML='🎉 Bạn đã khám phá đủ 4 đặc trưng văn hóa!';
+        markDone('B');
+      }
+    };
+  });
+}
+
+function renderQuiz(s){
+  stopVoice(); lastIntroVoice='';
+  const flip=s.x>CONFIG.mapWidth/2;
+  stage.className='stage'+(flip?' flip':'');
+  stage.innerHTML=`<div class="stageChar">${charVisual(s)}<div class="cname">${s.name}</div></div><div class="card" id="cardBox"></div>`;
+  const box=document.getElementById('cardBox');
+  let html=`<span class="tag">KIỂM TRA CUỐI BÀI 3</span><h2>Ôn lại kiến thức (cần ≥ 3/4)</h2>`;
+  QUESTIONS.forEach((qq,qi)=>{
+    html+=`<div style="margin-bottom:18px"><p style="font-weight:700;margin-bottom:10px;color:#0a1a3a">${qi+1}. ${qq.q}</p>`;
+    qq.opts.forEach((o,oi)=> html+=`<button class="opt" data-q="${qi}" data-o="${oi}">${o}</button>`);
+    html+=`<div class="explain" id="ex${qi}">${qq.ex}</div></div>`;
+  });
+  html+=`<div id="quizResult" style="font-weight:800;font-size:16px;margin:10px 0"></div><div id="quizActions"></div>`;
+  box.innerHTML=html;
+  const answered={}; let score=0;
+  box.querySelectorAll('.opt').forEach(btn=>{
+    btn.onclick=()=>{
+      const qi=+btn.dataset.q, oi=+btn.dataset.o;
+      if(answered[qi]!==undefined) return;
+      answered[qi]=oi; const correct=QUESTIONS[qi].correct;
+      box.querySelectorAll(`.opt[data-q="${qi}"]`).forEach(b=>{ if(+b.dataset.o===correct) b.classList.add('correct'); b.disabled=true; });
+      if(oi!==correct) btn.classList.add('wrong'); else score++;
+      document.getElementById('ex'+qi).style.display='block';
+      if(Object.keys(answered).length===QUESTIONS.length){
+        const pass=score>=3, res=document.getElementById('quizResult'), act=document.getElementById('quizActions');
+        res.textContent=`Kết quả: ${score}/4 — ${pass?'Đạt! Chào mừng bạn, '+PLAYER.name+' 🎊':'Chưa đạt (cần ≥ 3/4).'}`;
+        res.style.color=pass?'#0a8f7e':'#ef4444';
+        if(pass){ markDone('Q'); fireConfetti(); act.innerHTML=`<button class="close" onclick="window.__close()">Hoàn thành Bài 3 🎉</button>`; }
+        else { act.innerHTML=`<button class="close" style="background:#2dd4bf;color:#04223a" id="retryBtn">🔄 Làm lại</button><button class="close" style="background:#0a1a3a;margin-top:10px" onclick="window.__close()">↩ Thoát ra ôn lại</button>`;
+          document.getElementById('retryBtn').onclick=()=>renderQuiz(s); }
+      }
+    };
+  });
+}
+
+function markDone(id){
+  if(!doneSet.has(id)){
+    doneSet.add(id); completed++;
+    document.getElementById('pct').textContent=completed;
+    staffEls[id].classList.add('done'); staffEls[id].querySelector('.bubble').textContent='✓ Xong';
+    const md=document.getElementById('m_'+id); if(md) md.classList.add('done');
+    toast(`✅ Hoàn thành! (${completed}/5)`);
+  }
+}
+
+window.__close=()=>{ stopVoice(); panel.style.display='none'; checkNear();
+  if(completed>=5) toast(`🏆 ${PLAYER.name} đã hoàn thành Bài 3: Văn hóa doanh nghiệp!`); };
+
+function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.style.display='block'; clearTimeout(t._tm); t._tm=setTimeout(()=>t.style.display='none',2600); }
+
+/* pháo giấy */
+const cvs=document.getElementById('confetti'), ctx=cvs.getContext('2d');
+let confParticles=[], confAnim=null;
+function resizeConf(){ cvs.width=window.innerWidth; cvs.height=window.innerHeight; }
+resizeConf(); addEventListener('resize',resizeConf);
+function fireConfetti(){
+  cvs.style.display='block'; resizeConf();
+  const colors=['#2dd4bf','#fbbf24','#ef4444','#60a5fa','#22c55e','#f472b6','#ffffff'];
+  confParticles=[];
+  for(let i=0;i<160;i++){ confParticles.push({ x:Math.random()*cvs.width, y:-20-Math.random()*cvs.height*0.3, r:5+Math.random()*7, c:colors[(Math.random()*colors.length)|0], vx:(Math.random()-0.5)*3, vy:2+Math.random()*4, rot:Math.random()*6, vr:(Math.random()-0.5)*0.3 }); }
+  if(confAnim) cancelAnimationFrame(confAnim);
+  const start=performance.now();
+  (function run(now){
+    ctx.clearRect(0,0,cvs.width,cvs.height);
+    confParticles.forEach(p=>{ p.x+=p.vx; p.y+=p.vy; p.vy+=0.04; p.rot+=p.vr; ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.rot); ctx.fillStyle=p.c; ctx.fillRect(-p.r/2,-p.r/2,p.r,p.r*0.6); ctx.restore(); });
+    if(now-start<3500){ confAnim=requestAnimationFrame(run); } else { ctx.clearRect(0,0,cvs.width,cvs.height); cvs.style.display='none'; }
+  })(start);
+}
+
+addEventListener('resize',()=>{ if(running) updateCamera(); });
+</script>
+</body>
+</html>
