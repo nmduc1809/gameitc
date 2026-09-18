@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <style>
 #genderPick { display:flex; gap:10px; margin-top:4px; }
 #genderPick .genBtn { flex:1; padding:12px; border-radius:10px; border:2px solid rgba(255,255,255,.25);
@@ -31,7 +32,6 @@
   .staff.done .bubble { background:#22c55e; color:#fff; animation:none; }
   @keyframes bob { 0%,100%{ transform:translateY(0);} 50%{ transform:translateY(-7px);} }
 
-  /* bong bóng chat đẩy cao để không che đầu nhân vật */
   .chatBubble { position:absolute; bottom:500px; transform:translateX(-50%) scale(.6);
     background:#fff; color:#0a1a3a; font-size:13px; font-weight:600; padding:8px 14px; border-radius:14px;
     white-space:nowrap; box-shadow:0 6px 16px rgba(0,0,0,.25); opacity:0; transition:opacity .25s, transform .25s; pointer-events:none; z-index:6; max-width:240px; }
@@ -41,7 +41,6 @@
   #player { position:absolute; bottom:90px; transform:translateX(-50%); z-index:5; text-align:center; }
   #player .avatar { font-size:110px; line-height:1; filter:drop-shadow(0 10px 14px rgba(0,0,0,.45)); }
   #player img { height:340px; max-height:52vh; filter:drop-shadow(0 10px 14px rgba(0,0,0,.45)); display:block; transition:transform .05s; }
-  /* lật riêng ảnh, KHÔNG lật khối -> tên không bị ngược */
   #player[data-face="l"] img { transform:scaleX(-1); }
   #player[data-face="r"] img { transform:scaleX(1); }
   #player .ptag { background:#2dd4bf; color:#04223a; font-weight:700; font-size:12px; padding:3px 10px; border-radius:12px; margin-top:4px; display:inline-block; }
@@ -67,7 +66,6 @@
   .arrow { width:74px; height:74px; border-radius:50%; background:rgba(255,255,255,.18); border:2px solid rgba(255,255,255,.4); color:#fff; font-size:34px; font-weight:800; display:flex; align-items:center; justify-content:center; cursor:pointer; }
   .arrow:active { background:rgba(45,212,191,.5); }
 
-  /* thanh hướng dẫn di chuyển */
   #moveGuide { position:fixed; left:50%; bottom:14px; transform:translateX(-50%);
     display:none; align-items:center; gap:10px; flex-wrap:wrap; justify-content:center;
     background:rgba(10,26,58,.82); backdrop-filter:blur(6px); color:#dbe7ff;
@@ -95,15 +93,14 @@
   #start .key { background:rgba(255,255,255,.15); padding:2px 8px; border-radius:5px; font-weight:700; }
   #start .ctrls { margin-top:18px; font-size:12px; opacity:.65; }
 
-  #panel { position:fixed; inset:0; z-index:40; display:none; background:rgba(4,16,40,.88); backdrop-filter:blur(5px); align-items:flex-start; justify-content:center; padding:20px; overflow-y:auto; }
-  .stage { display:flex; align-items:flex-end; max-width:1000px; width:100%; margin-top:2vh; }
-  .stage.flip { flex-direction:row-reverse; }
-  .stageChar { flex:0 0 300px; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; }
+  #panel { position:fixed; inset:0; z-index:40; display:none; background:rgba(4,16,40,.82); backdrop-filter:blur(5px); align-items:flex-start; justify-content:center; padding:20px; overflow-y:auto; }
+  .stage { display:flex; align-items:flex-end; max-width:1180px; width:100%; margin-top:2vh; }
+  .stageChar { flex:0 0 280px; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; }
   .stageChar img { width:100%; max-height:70vh; object-fit:contain; filter:drop-shadow(0 16px 24px rgba(0,0,0,.5)); animation:charIn .4s ease; }
   .stageChar .avatar { font-size:160px; }
   .stageChar .cname { background:#2dd4bf; color:#04223a; font-weight:800; font-size:13px; padding:5px 14px; border-radius:16px; margin-top:8px; }
   @keyframes charIn { from{ transform:translateY(40px) scale(.85); opacity:0;} to{ transform:translateY(0) scale(1); opacity:1;} }
-  .card { background:#fff; color:#1a2a44; flex:1 1 auto; max-width:600px; border-radius:18px; padding:26px 30px; max-height:90vh; overflow-y:auto; box-shadow:0 30px 80px rgba(0,0,0,.5); animation:pop .25s ease; }
+  .card { background:#fff; color:#1a2a44; flex:1 1 auto; max-width:640px; border-radius:18px; padding:26px 30px; max-height:92vh; overflow-y:auto; box-shadow:0 30px 80px rgba(0,0,0,.5); animation:pop .25s ease; }
   @keyframes pop { from{ transform:scale(.94); opacity:0;} to{ transform:scale(1); opacity:1;} }
   .card .tag { display:inline-block; background:#e6f9f6; color:#0a8f7e; font-size:12px; font-weight:700; padding:4px 12px; border-radius:20px; margin-bottom:12px; }
   .card h2 { font-size:21px; margin-bottom:14px; color:#0a1a3a; }
@@ -115,32 +112,92 @@
   .chan { background:#f0f4fa; border-radius:10px; padding:10px 14px; font-size:13px; flex:1 1 45%; }
   .chan b { color:#0a1a3a; }
 
-  /* thẻ văn hóa */
-  .cultGrid { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:16px; }
-  .cultCard { background:#f0f4fa; border-radius:14px; overflow:hidden; cursor:pointer; border:2px solid transparent; transition:.2s; }
-  .cultCard:hover { border-color:#2dd4bf; box-shadow:0 8px 20px rgba(45,212,191,.25); transform:translateY(-3px); }
-  .cultCard.open { border-color:#2dd4bf; }
-  .cultCard .thumb { width:100%; height:110px; background-size:cover; background-position:center; position:relative; }
-  .cultCard .thumb::after { content:'👆 Bấm xem'; position:absolute; bottom:6px; right:8px; background:rgba(4,16,40,.7); color:#fff; font-size:10px; font-weight:700; padding:2px 8px; border-radius:10px; }
-  .cultCard.open .thumb::after { content:'✓ Đã mở'; background:rgba(34,197,94,.85); }
-  .cultCard .body { padding:10px 12px; }
-  .cultCard .ctitle { font-weight:800; font-size:14px; color:#0a1a3a; }
-  .cultCard .cdesc { font-size:12px; color:#50607a; line-height:1.5; margin-top:5px; max-height:0; overflow:hidden; transition:max-height .3s ease; }
-  .cultCard.open .cdesc { max-height:200px; }
-  .cultCard .caction { font-size:12px; color:#0a8f7e; font-weight:600; margin-top:8px; background:#e6f9f6; padding:6px 8px; border-radius:8px; display:none; }
-  .cultCard.open .caction { display:block; }
-  .cultHint { font-size:12px; color:#94a3b8; margin-bottom:14px; }
+  /* ===== TRẠM B: FULL-SCREEN — 4 thẻ dàn kín, nền BG game blur, cô gái ở góc ===== */
+  #panelB { position:fixed; inset:0; z-index:42; display:none; overflow:hidden; }
+  #panelB .bBg { position:absolute; inset:-40px; background-size:cover; background-position:center;
+    filter:blur(14px) brightness(.72) saturate(1.05); transform:scale(1.08); }
+  #panelB .bBgTint { position:absolute; inset:0; background:linear-gradient(180deg, rgba(6,16,40,.45), rgba(6,16,40,.62)); }
 
-  .opt { display:block; width:100%; text-align:left; background:#f0f4fa; border:2px solid transparent; padding:12px 16px; border-radius:10px; margin-bottom:10px; cursor:pointer; font-size:14px; color:#1a2a44; transition:.15s; font-family:inherit; }
-  .opt:hover { border-color:#2dd4bf; }
+  #panelB .bHead { position:absolute; top:0; left:0; right:0; z-index:3; text-align:center;
+    padding:18px 20px 10px; pointer-events:none; }
+  #panelB .bHead .btag { display:inline-block; background:rgba(45,212,191,.18); color:#7ff0e0;
+    border:1px solid rgba(45,212,191,.5); font-size:11px; font-weight:800; letter-spacing:.5px;
+    padding:4px 14px; border-radius:20px; margin-bottom:8px; }
+  #panelB .bHead h2 { color:#fff; font-size:26px; font-weight:800; text-shadow:0 3px 14px rgba(0,0,0,.6); margin-bottom:6px; }
+  #panelB .bHead p { color:#dbe7ff; font-size:13.5px; line-height:1.6; max-width:640px; margin:0 auto; text-shadow:0 2px 8px rgba(0,0,0,.5); }
+  @media (max-width:680px){ #panelB .bHead h2{ font-size:20px; } #panelB .bHead p{ font-size:12px; } }
+
+  #cards3dWrap { position:absolute; inset:0; z-index:2; background:transparent; border:none; overflow:visible; }
+  #cards3dWrap canvas { display:block; width:100%; height:100%; background:transparent; }
+
+  #panelB .bChar { position:absolute; left:24px; bottom:0; z-index:4; display:flex; flex-direction:column; align-items:center; pointer-events:none; }
+  #panelB .bChar img { height:46vh; max-height:440px; object-fit:contain; filter:drop-shadow(0 16px 26px rgba(0,0,0,.55)); animation:charIn .45s ease; }
+  #panelB .bChar .cname { background:#2dd4bf; color:#04223a; font-weight:800; font-size:12px; padding:4px 12px; border-radius:14px; margin-top:-6px; }
+  #panelB .bBubble { position:absolute; left:26px; bottom:calc(46vh + 6px); z-index:5; max-width:250px;
+    background:#fff; color:#0a1a3a; font-size:13px; font-weight:600; line-height:1.5; padding:11px 15px; border-radius:16px;
+    box-shadow:0 10px 26px rgba(0,0,0,.35); animation:bob 2.4s ease-in-out infinite; }
+  #panelB .bBubble::after { content:''; position:absolute; bottom:-8px; left:34px; border:8px solid transparent; border-top-color:#fff; border-bottom:0; }
+  #panelB .bBubble.done { background:#22c55e; color:#fff; animation:none; }
+  #panelB .bBubble.done::after { border-top-color:#22c55e; }
+  @media (max-width:820px){
+    #panelB .bChar img{ height:34vh; }
+    #panelB .bBubble{ bottom:calc(34vh + 6px); max-width:200px; font-size:12px; }
+  }
+  @media (max-width:560px){ #panelB .bChar{ opacity:.28; } #panelB .bBubble{ left:12px; } }
+
+  #panelB .bFoot { position:absolute; right:22px; bottom:22px; z-index:6; display:flex; flex-direction:column; align-items:flex-end; gap:10px; }
+  #panelB .bCount { background:rgba(10,16,30,.6); border:1px solid rgba(255,255,255,.22); color:#eef4ff;
+    font-size:12.5px; font-weight:700; padding:8px 16px; border-radius:20px; backdrop-filter:blur(6px); }
+  #panelB .bCount b{ color:#2dd4bf; }
+  #panelB .bContinue { background:#334155; color:#cbd5e1; border:none; padding:13px 26px; border-radius:26px;
+    font-weight:800; font-size:14px; cursor:not-allowed; font-family:inherit; transition:.2s; box-shadow:0 8px 22px rgba(0,0,0,.3); }
+  #panelB .bContinue.ready { background:linear-gradient(90deg,#2dd4bf,#0a8f7e); color:#04223a; cursor:pointer; }
+  #panelB .bClose { position:absolute; top:14px; right:16px; z-index:6; width:38px; height:38px; border-radius:50%;
+    background:rgba(10,16,30,.55); border:1px solid rgba(255,255,255,.25); color:#fff; font-size:20px; cursor:pointer; }
+
+  /* ===== TRẮC NGHIỆM — UI hiện đại ===== */
+  .card.cardQuiz { max-width:680px; }
+  .quizHead { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:6px; }
+  .quizProg { flex:1; height:8px; background:#e8eef7; border-radius:8px; overflow:hidden; }
+  .quizProg > i { display:block; height:100%; width:0; background:linear-gradient(90deg,#2dd4bf,#0a8f7e); border-radius:8px; transition:width .35s ease; }
+  .quizCount { font-size:13px; font-weight:800; color:#0a8f7e; white-space:nowrap; }
+  .qBlock { background:#f7fafe; border:1px solid #e6edf7; border-radius:16px; padding:18px 18px 14px; margin-bottom:16px; transition:.2s; }
+  .qBlock.answered { border-color:#d3e0ef; }
+  .qTitle { display:flex; gap:12px; align-items:flex-start; margin-bottom:14px; }
+  .qNum { flex:0 0 30px; width:30px; height:30px; border-radius:50%; background:#0a1a3a; color:#fff; font-size:14px; font-weight:800; display:flex; align-items:center; justify-content:center; }
+  .qBlock.done-correct .qNum { background:#22c55e; }
+  .qBlock.done-wrong .qNum { background:#ef4444; }
+  .qText { font-size:15px; font-weight:700; color:#0a1a3a; line-height:1.5; padding-top:3px; }
+  .qOpts { display:flex; flex-direction:column; gap:9px; }
+  .opt { position:relative; display:flex; align-items:center; gap:10px; width:100%; text-align:left;
+    background:#fff; border:2px solid #e6edf7; padding:13px 15px; border-radius:12px; cursor:pointer;
+    font-size:14px; color:#1a2a44; transition:.16s; font-family:inherit; }
+  .opt:hover:not(:disabled) { border-color:#2dd4bf; transform:translateX(3px); box-shadow:0 4px 14px rgba(45,212,191,.18); }
   .opt:disabled { cursor:default; }
-  .opt.correct { background:#d8f5e3; border-color:#22c55e; }
-  .opt.wrong { background:#fde4e4; border-color:#ef4444; }
-  .explain { font-size:13px; background:#eef6ff; padding:12px; border-radius:8px; margin-top:6px; line-height:1.6; display:none; }
-  .close { margin-top:18px; background:#0a1a3a; color:#fff; border:none; padding:14px 28px; border-radius:26px; font-weight:700; cursor:pointer; font-size:14px; width:100%; font-family:inherit; }
+  .opt .dot { flex:0 0 22px; width:22px; height:22px; border-radius:50%; border:2px solid #c7d3e3; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:800; color:#fff; transition:.16s; }
+  .opt.correct { background:#eafaf0; border-color:#22c55e; color:#0a7a3f; }
+  .opt.correct .dot { background:#22c55e; border-color:#22c55e; }
+  .opt.correct .dot::after { content:'✓'; }
+  .opt.wrong { background:#fdecec; border-color:#ef4444; color:#b02525; }
+  .opt.wrong .dot { background:#ef4444; border-color:#ef4444; }
+  .opt.wrong .dot::after { content:'✕'; }
+  .explain { font-size:13px; background:#eef6ff; border-left:3px solid #60a5fa; color:#26456e; padding:11px 13px; border-radius:8px; margin-top:12px; line-height:1.6; display:none; }
+  .qBlock.answered .explain { display:block; animation:pop .25s ease; }
+
+  .quizResultBox { text-align:center; padding:8px 0 4px; }
+  .scoreRing { width:120px; height:120px; margin:6px auto 12px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center; position:relative; }
+  .scoreRing .inner { width:88px; height:88px; border-radius:50%; background:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+  .scoreRing .sc { font-size:26px; font-weight:800; line-height:1; color:#0a1a3a; }
+  .scoreRing .sl { font-size:11px; color:#64748b; margin-top:2px; }
+  .resTitle { font-size:18px; font-weight:800; margin-bottom:4px; }
+  .resSub { font-size:13px; color:#64748b; margin-bottom:6px; }
+
+  .close { margin-top:18px; background:#0a1a3a; color:#fff; border:none; padding:14px 28px; border-radius:26px; font-weight:700; cursor:pointer; font-size:14px; width:100%; font-family:inherit; transition:.15s; }
+  .close:hover { filter:brightness(1.1); }
   #toast { position:fixed; top:100px; left:50%; transform:translateX(-50%); background:#22c55e; color:#fff; padding:12px 26px; border-radius:30px; font-weight:700; z-index:60; display:none; box-shadow:0 8px 24px rgba(34,197,94,.5); }
 
-  @media (max-width:680px){ .stageChar{ display:none; } .card{ max-width:100%; } #minimap .track{ width:160px; } .cultGrid{ grid-template-columns:1fr; } .cultCard .thumb{ height:130px; } }
+  @media (max-width:680px){ .stageChar{ display:none; } .card{ max-width:100%; } .card.cardQuiz{ max-width:100%; } #minimap .track{ width:160px; } }
   #confetti { position:fixed; inset:0; z-index:55; pointer-events:none; display:none; }
 </style>
 </head>
@@ -190,6 +247,26 @@
 </div>
 
 <div id="panel"><div class="stage" id="stage"></div></div>
+
+<!-- TRẠM B full-screen -->
+<div id="panelB">
+  <div class="bBg" id="bBg"></div>
+  <div class="bBgTint"></div>
+  <button class="bClose" onclick="window.__close()">✕</button>
+  <div class="bHead">
+    <span class="btag">4 ĐẶC TRƯNG VĂN HÓA INTECOMER</span>
+    <h2>"Chất Intecomer" gói trong 4 điều</h2>
+    <p>Nhấn vào từng thẻ để lật xem &amp; nghe nội dung. Đặc trưng nào khiến bạn ấn tượng nhất?</p>
+  </div>
+  <div id="cards3dWrap"></div>
+  <div class="bChar" id="bChar"></div>
+  <div class="bBubble" id="bBubble">Hãy chạm hoặc bấm vào thẻ để xem nội dung nhé!</div>
+  <div class="bFoot">
+    <div class="bCount">Đã mở: <b><span id="openedCount">0</span>/4</b></div>
+    <button class="bContinue" id="bContinue" disabled>Hãy lật đủ 4 thẻ để tiếp tục</button>
+  </div>
+</div>
+
 <audio id="voicePlayer"></audio>
 
 <script>
@@ -198,7 +275,7 @@ const BG_URL = 'https://res.cloudinary.com/dcu1om99i/image/upload/v1788770993/BG
 const CONFIG = {
   playerImgMale:   'https://res.cloudinary.com/dcu1om99i/image/upload/v1781835175/0-Nhan-vien_kguemc.png',
   playerImgFemale: 'https://res.cloudinary.com/dcu1om99i/image/upload/v1781842949/0-Nhan-vien_nu_tou0w2.png',
-  playerImg: '', // sẽ được gán theo giới tính khi bắt đầu
+  playerImg: '',
   playerEmoji: '🧑‍💼',
   mapWidth: 2928,
   stations: [
@@ -214,49 +291,31 @@ const CONFIG = {
   ]
 };
 
+/* Dữ liệu thẻ lật 3D cho trạm B */
+const B_CARDS_3D = [
+  { title:'Trẻ trung – Năng động',
+    front:'https://res.cloudinary.com/dcu1om99i/image/upload/v1784003068/1_pywlcx.png',
+    back: 'https://res.cloudinary.com/dcu1om99i/image/upload/v1784003072/1A_m3kv74.png',
+    voice:'https://res.cloudinary.com/dcu1om99i/video/upload/v1781838023/Tre_trung_nang_dong_tdgyrz.mp3' },
+  { title:'Sáng tạo – Tài năng',
+    front:'https://res.cloudinary.com/dcu1om99i/image/upload/v1784003481/2_new_o8omhn.png',
+    back: 'https://res.cloudinary.com/dcu1om99i/image/upload/v1784003069/2A_yjehbp.png',
+    voice:'https://res.cloudinary.com/dcu1om99i/video/upload/v1781838023/Sang_tao_tai_nang_ygmkal.mp3' },
+  { title:'Cởi mở – Gắn kết',
+    front:'https://res.cloudinary.com/dcu1om99i/image/upload/v1784003068/3_f2pycf.png',
+    back: 'https://res.cloudinary.com/dcu1om99i/image/upload/v1784003068/3A_gkhrsd.png',
+    voice:'https://res.cloudinary.com/dcu1om99i/video/upload/v1781838024/Coi_mo_gan_ket_otqmqr.mp3' },
+  { title:'Văn hóa Gia đình',
+    front:'https://res.cloudinary.com/dcu1om99i/image/upload/v1784003068/4_w0qp1s.png',
+    back: 'https://res.cloudinary.com/dcu1om99i/image/upload/v1784003069/4A_meygvf.png',
+    voice:'https://res.cloudinary.com/dcu1om99i/video/upload/v1781838024/Van_hoa_gia_dinh_pblbe2.mp3' },
+];
+
 const CONTENT = {
   A: () => `<span class="tag">MODULE 3.A — TINH THẦN INTECOMER</span>
     <h2>Một khi là Intecomer, mãi mãi là người nhà</h2>
     <div class="narration">"Có một điều thú vị ở VTC Intecom: không ai thực sự 'rời' khỏi Intecom. Dù bạn chuyển công tác hay nghỉ hưu — một khi đã là Intecomer, mãi mãi là anh em một nhà. Đó không phải slogan."</div>
     <p style="font-size:14px;line-height:1.7;color:#50607a">VTC Intecom là một trong những đơn vị tiên phong của ngành game Việt Nam — nơi tình thân là cách mọi người đối xử với nhau mỗi ngày.</p>`,
-  B: () => {
-    const cards = [
-      { t:'Trẻ trung – Năng động',
-        img:'https://res.cloudinary.com/dcu1om99i/image/upload/v1781836997/1_Tre_trung_nang_dong_ckd7ah.jpg',
-        d:'Tinh thần không bao giờ già — luôn sẵn sàng thử cái mới, chạy nhanh và thích nghi linh hoạt.',
-        a:'→ Tự nguyện xung phong nhận thử việc mới, không chờ được giao.',
-        voice:'https://res.cloudinary.com/dcu1om99i/video/upload/v1781838023/Tre_trung_nang_dong_tdgyrz.mp3' },
-      { t:'Sáng tạo – Tài năng',
-        img:'https://res.cloudinary.com/dcu1om99i/image/upload/v1781836997/2_Sang_tao_tai_nang_gox509.jpg',
-        d:'Mỗi người mang một thế mạnh riêng — sự khác biệt được trân trọng, không bị san phẳng.',
-        a:'→ Chủ động đề xuất ý tưởng cải tiến dù bạn chỉ là nhân viên mới nhất phòng.',
-        voice:'https://res.cloudinary.com/dcu1om99i/video/upload/v1781838023/Sang_tao_tai_nang_ygmkal.mp3' },
-      { t:'Cởi mở – Gắn kết',
-        img:'https://res.cloudinary.com/dcu1om99i/image/upload/v1781836997/3_Coi_mo_gan_ket_cmvpf9.jpg',
-        d:'Nói thẳng, nghe thật — môi trường nơi phản hồi được xem là món quà, không phải chỉ trích.',
-        a:'→ Tham gia nhóm Facebook nội bộ, comment, chia sẻ và tương tác với đồng nghiệp.',
-        voice:'https://res.cloudinary.com/dcu1om99i/video/upload/v1781838024/Coi_mo_gan_ket_otqmqr.mp3' },
-      { t:'Văn hóa Gia đình',
-        img:'https://res.cloudinary.com/dcu1om99i/image/upload/v1781836998/4_Van_hoa_gia_dinh_v06bah.jpg',
-        d:'Không phân biệt cấp bậc khi cần hỗ trợ nhau — lãnh đạo và nhân viên cùng ngồi ăn trưa, cùng xắn tay áo khi deadline đến.',
-        a:'→ Hỏi đồng nghiệp cần giúp gì trước khi bạn về đúng giờ trong tuần đầu.',
-        voice:'https://res.cloudinary.com/dcu1om99i/video/upload/v1781838024/Van_hoa_gia_dinh_pblbe2.mp3' },
-    ];
-    const cardsHTML = cards.map((c,i) => `
-      <div class="cultCard" data-idx="${i}" data-voice="${c.voice}">
-        <div class="thumb" style="background-image:url('${c.img}')"></div>
-        <div class="body">
-          <div class="ctitle">${c.t}</div>
-          <div class="cdesc">${c.d}</div>
-          <div class="caction">${c.a}</div>
-        </div>
-      </div>`).join('');
-    return `<span class="tag">4 ĐẶC TRƯNG VĂN HÓA INTECOMER</span>
-      <h2>"Chất Intecomer" gói trong 4 điều</h2>
-      <div class="narration">"Mời bạn bấm vào từng tấm thẻ để khám phá. Đặc trưng nào khiến bạn ấn tượng nhất, và vì sao?"</div>
-      <div class="cultHint" id="cultHint">💡 Bấm mở cả 4 thẻ để tiếp tục. <b>Đã mở: <span id="openedCount">0</span>/4</b></div>
-      <div class="cultGrid">${cardsHTML}</div>`;
-  },
   C: () => `<span class="tag">KÊNH NỘI BỘ & LỊCH VĂN HÓA</span>
     <h2>Những sợi dây kết nối ngôi nhà</h2>
     <div class="narration">"Một ngôi nhà lớn cần những sợi dây kết nối mọi người."</div>
@@ -285,6 +344,7 @@ const QUESTIONS = [
 /* ============== KHỞI TẠO ============== */
 const world=document.getElementById('world'), player=document.getElementById('player');
 const actBtn=document.getElementById('actBtn'), panel=document.getElementById('panel');
+const panelB=document.getElementById('panelB');
 const stage=document.getElementById('stage'), voicePlayer=document.getElementById('voicePlayer');
 const moveGuide=document.getElementById('moveGuide');
 world.style.width=CONFIG.mapWidth+'px';
@@ -341,11 +401,12 @@ function bindHold(el,dir){ const d=e=>{e.preventDefault();holdDir=dir;}, u=e=>{e
   el.addEventListener('mousedown',d); el.addEventListener('touchstart',d,{passive:false}); el.addEventListener('mouseup',u); el.addEventListener('mouseleave',u); el.addEventListener('touchend',u); el.addEventListener('touchcancel',u); }
 bindHold(document.getElementById('leftBtn'),-1); bindHold(document.getElementById('rightBtn'),1);
 
-/* Space để mở trạm */
+function panelOpen(){ return panel.style.display==='flex' || panelB.style.display==='block'; }
+
 addEventListener('keydown', e=>{
   if(e.code==='Space'){
     e.preventDefault();
-    if(running && panel.style.display!=='flex' && nearStation){ openStation(nearStation); }
+    if(running && !panelOpen() && nearStation){ openStation(nearStation); }
   }
 });
 
@@ -354,7 +415,7 @@ function loop(){
   let dir=holdDir;
   if(keys['ArrowLeft']||keys['KeyA']) dir=-1;
   if(keys['ArrowRight']||keys['KeyD']) dir=1;
-  if(dir!==0 && panel.style.display!=='flex'){
+  if(dir!==0 && !panelOpen()){
     playerX+=dir*SPEED; playerX=Math.max(80,Math.min(CONFIG.mapWidth-80,playerX));
     player.dataset.face = dir>0 ? 'r' : 'l';
     placePlayer(); updateCamera(); updateMiniPlayer(); checkNear();
@@ -401,74 +462,248 @@ function charVisual(s){ return s.img ? `<img src="${s.img}" alt="">` : `<div cla
 function openStation(s){
   if(s.id==='Q'){ renderQuiz(s); panel.style.display='flex'; return; }
   if(s.id==='B'){ openStationB(s); return; }
-  const flip = s.x > CONFIG.mapWidth/2;
   const charHTML=`<div class="stageChar">${charVisual(s)}<div class="cname">${s.name}</div></div>`;
   const voiceBar=s.voice?`<div class="voiceBar"><button onclick="window.__replayVoice()">🔊 Nghe lại</button><span>Đang đọc lời giảng...</span></div>`:'';
-  stage.className='stage'+(flip?' flip':'');
+  stage.className='stage';
   stage.innerHTML=charHTML+`<div class="card">${CONTENT[s.id]()}${voiceBar}<button class="close" onclick="window.__close()">Đã hiểu, tiếp tục →</button></div>`;
   markDone(s.id);
   lastIntroVoice=s.voice||''; playVoice(s.voice);
   panel.style.display='flex';
 }
 
-/* trạm B: voice từng thẻ + bắt buộc mở đủ 4 thẻ */
+/* ===== TRẠM B: FULL-SCREEN — 4 thẻ 3D thẳng hàng, nền BG game blur, cô gái ở góc ===== */
+let _bScene=null;
 function openStationB(s){
-  const flip = s.x > CONFIG.mapWidth/2;
-  const charHTML=`<div class="stageChar">${charVisual(s)}<div class="cname">${s.name}</div></div>`;
-  const voiceBar=s.voice?`<div class="voiceBar"><button onclick="window.__replayVoice()">🔊 Nghe lại lời dẫn</button><span>Bấm từng thẻ để nghe & xem nội dung</span></div>`:'';
-  stage.className='stage'+(flip?' flip':'');
-  stage.innerHTML=charHTML+`<div class="card">${CONTENT.B()}${voiceBar}
-    <button class="close" id="bContinue" disabled style="opacity:.4">Hãy mở đủ 4 thẻ để tiếp tục</button></div>`;
-  panel.style.display='flex';
+  document.getElementById('bBg').style.backgroundImage=`url("${BG_URL}")`;
+
+  const bChar=document.getElementById('bChar');
+  bChar.innerHTML = charVisual(s) + `<div class="cname">${s.name}</div>`;
+
+  const bubble=document.getElementById('bBubble');
+  bubble.classList.remove('done');
+  bubble.textContent='Hãy chạm hoặc bấm vào thẻ để xem nội dung nhé!';
+
+  document.getElementById('openedCount').textContent='0';
+  const cont=document.getElementById('bContinue');
+  cont.classList.remove('ready'); cont.disabled=true; cont.textContent='Hãy lật đủ 4 thẻ để tiếp tục'; cont.onclick=null;
+
+  panelB.style.display='block';
   lastIntroVoice=s.voice||''; playVoice(s.voice);
 
-  const opened=new Set(); const cont=document.getElementById('bContinue');
-  stage.querySelectorAll('.cultCard').forEach(cardEl=>{
-    cardEl.onclick=()=>{
-      cardEl.classList.toggle('open');
-      if(cardEl.classList.contains('open')){
-        opened.add(cardEl.dataset.idx);
-        const v=cardEl.dataset.voice; if(v && v!=='undefined') playVoice(v);
-      }
-      document.getElementById('openedCount').textContent=opened.size;
-      if(opened.size>=4){
-        cont.disabled=false; cont.style.opacity='1'; cont.textContent='Đã hiểu, tiếp tục →';
-        cont.onclick=()=>window.__close();
-        document.getElementById('cultHint').innerHTML='🎉 Bạn đã khám phá đủ 4 đặc trưng văn hóa!';
-        markDone('B');
-      }
-    };
-  });
+  const opened=new Set();
+  const onOpen=(idx)=>{
+    opened.add(idx);
+    document.getElementById('openedCount').textContent=opened.size;
+    if(opened.size>=4){
+      cont.classList.add('ready'); cont.disabled=false; cont.textContent='Đã hiểu, tiếp tục →';
+      cont.onclick=()=>window.__close();
+      bubble.classList.add('done');
+      bubble.textContent='🎉 Tuyệt vời! Bạn đã khám phá đủ 4 đặc trưng văn hóa Intecomer.';
+      markDone('B');
+    }
+  };
+
+  setTimeout(()=>{ _bScene=initCards3D(document.getElementById('cards3dWrap'), onOpen); }, 30);
 }
 
+/* dựng scene Three.js: 4 thẻ THẲNG HÀNG cách đều (không nghiêng); nền TRONG SUỐT (BG blur lộ qua) */
+function initCards3D(wrap, onOpen){
+  if(!window.THREE || !wrap) return null;
+  const CARD_W=2.8, CARD_H=3.73;
+  const GAP=0.55;
+  const N=B_CARDS_3D.length;
+  const W=()=>wrap.clientWidth, H=()=>wrap.clientHeight;
+
+  const scene=new THREE.Scene();
+  const camera=new THREE.PerspectiveCamera(50, W()/H(), 0.1, 100);
+  camera.position.set(0,0,12);
+  const renderer=new THREE.WebGLRenderer({antialias:true, alpha:true});
+  renderer.setClearColor(0x000000, 0);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+  renderer.setSize(W(),H());
+  wrap.appendChild(renderer.domElement);
+
+  const texLoader=new THREE.TextureLoader(); texLoader.crossOrigin='anonymous';
+  const loadTex=(url)=>new Promise(res=>{ texLoader.load(url,
+    t=>{ t.colorSpace=THREE.SRGBColorSpace; t.anisotropy=renderer.capabilities.getMaxAnisotropy(); res(t); },
+    undefined, ()=>res(null)); });
+
+  const cardMeshes=[]; let raf=null, alive=true;
+  const raycaster=new THREE.Raycaster(); const pointer=new THREE.Vector2();
+  const rect=()=>renderer.domElement.getBoundingClientRect();
+
+  function playCardVoice(url){ playVoice(url); }
+
+  (async ()=>{
+    const all=await Promise.all(B_CARDS_3D.map(async c=>({
+      front:await loadTex(c.front), back:await loadTex(c.back), voice:c.voice
+    })));
+    if(!alive) return;
+
+    const totalWidth = N*CARD_W + (N-1)*GAP;
+    const startX = -totalWidth/2 + CARD_W/2;
+
+    all.forEach((data,i)=>{
+      const frontMat=new THREE.MeshBasicMaterial({map:data.front, transparent:true, alphaTest:0.5, side:THREE.FrontSide, toneMapped:false});
+      const backMat =new THREE.MeshBasicMaterial({map:data.back,  transparent:true, alphaTest:0.5, side:THREE.FrontSide, toneMapped:false});
+      if(!data.front) frontMat.color.set(0x2a3a5f);
+      if(!data.back)  backMat.color.set(0x2a3a5f);
+      const g=new THREE.Group(); const geo=new THREE.PlaneGeometry(CARD_W,CARD_H);
+      const fp=new THREE.Mesh(geo,frontMat); fp.position.z=0.001;
+      const bp=new THREE.Mesh(geo,backMat);  bp.rotation.y=Math.PI; bp.position.z=-0.001;
+      g.add(fp); g.add(bp);
+
+      /* ===== 4 thẻ thẳng hàng, cách đều (không nghiêng) ===== */
+      const baseX = startX + i*(CARD_W+GAP);
+      const baseY = 0;
+      g.position.set(baseX, baseY, 0);
+
+      g.userData={
+        flipped:false, targetRot:0, phase:Math.random()*Math.PI*2, hover:false,
+        voice:data.voice, idx:i, baseX, baseY
+      };
+      g.scale.set(0.01,0.01,0.01); g.userData.appearDelay=i*120; g.userData.appearStart=performance.now();
+      scene.add(g); cardMeshes.push(g);
+    });
+    onResize();
+  })();
+
+  function flipCard(card){
+    const willOpen=!card.userData.flipped;
+    if(willOpen){
+      cardMeshes.forEach(m=>{ if(m!==card){ m.userData.flipped=false; m.userData.targetRot=0; } });
+      card.userData.flipped=true; card.userData.targetRot=Math.PI;
+      playCardVoice(card.userData.voice);
+      if(onOpen) onOpen(String(card.userData.idx));
+    } else {
+      card.userData.flipped=false; card.userData.targetRot=0;
+      stopVoice();
+    }
+  }
+
+  let downX=0,downY=0;
+  const getXY=e=>({x:e.changedTouches?e.changedTouches[0].clientX:e.clientX, y:e.changedTouches?e.changedTouches[0].clientY:e.clientY});
+  function onDown(e){ const p=getXY(e); downX=p.x; downY=p.y; }
+  function onUp(e){
+    const p=getXY(e);
+    if(Math.abs(p.x-downX)>8||Math.abs(p.y-downY)>8) return;
+    const r=rect();
+    pointer.x=((p.x-r.left)/r.width)*2-1;
+    pointer.y=-((p.y-r.top)/r.height)*2+1;
+    raycaster.setFromCamera(pointer,camera);
+    const hits=raycaster.intersectObjects(cardMeshes,true);
+    if(hits.length){ let o=hits[0].object; while(o && !o.userData.hasOwnProperty('flipped')) o=o.parent; if(o) flipCard(o); }
+  }
+  renderer.domElement.addEventListener('mousedown',onDown);
+  renderer.domElement.addEventListener('mouseup',onUp);
+  renderer.domElement.addEventListener('touchstart',onDown,{passive:true});
+  renderer.domElement.addEventListener('touchend',onUp);
+  renderer.domElement.addEventListener('mousemove',e=>{
+    const r=rect();
+    pointer.x=((e.clientX-r.left)/r.width)*2-1;
+    pointer.y=-((e.clientY-r.top)/r.height)*2+1;
+    raycaster.setFromCamera(pointer,camera);
+    const hits=raycaster.intersectObjects(cardMeshes,true);
+    renderer.domElement.style.cursor=hits.length?'pointer':'default';
+    cardMeshes.forEach(m=>m.userData.hover=false);
+    if(hits.length){ let o=hits[0].object; while(o && !o.userData.hasOwnProperty('flipped')) o=o.parent; if(o) o.userData.hover=true; }
+  });
+
+  const clock=new THREE.Clock();
+  function animate(){
+    if(!alive) return;
+    raf=requestAnimationFrame(animate);
+    const t=clock.getElapsedTime(), now=performance.now();
+    cardMeshes.forEach(m=>{
+      const u=m.userData;
+      if(u.appearStart!==undefined){
+        const el=now-u.appearStart-u.appearDelay;
+        if(el>=0){ const pr=Math.min(el/500,1); const e2=1-Math.pow(1-pr,3); m.scale.set(e2,e2,e2); if(pr>=1) delete u.appearStart; }
+      }
+      m.rotation.y += (u.targetRot - m.rotation.y) * 0.12;
+      m.position.y = u.baseY + Math.sin(t*0.9 + u.phase) * 0.12;
+
+      const targetScale = (u.hover && u.appearStart===undefined) ? 1.06 : 1;
+      if(u.appearStart===undefined){ const sc=m.scale.x+(targetScale-m.scale.x)*0.15; m.scale.set(sc,sc,sc); }
+      const tiltTarget = u.hover ? 0.06 : 0;
+      m.rotation.x += (tiltTarget - m.rotation.x) * 0.1;
+    });
+    renderer.render(scene,camera);
+  }
+
+  function onResize(){
+    if(!alive) return;
+    const aspect=W()/H();
+    camera.aspect=aspect;
+    const totalWidth = N*CARD_W + (N-1)*GAP;
+    const fov=camera.fov*Math.PI/180;
+    const distH=(CARD_H*1.55)/(2*Math.tan(fov/2));
+    const distW=(totalWidth*1.28)/(2*Math.tan(fov/2)*aspect);
+    camera.position.z=Math.max(distH,distW,8);
+    camera.position.x=-1.0;                // dịch cụm thẻ sang phải để né cô gái bên trái
+    camera.lookAt(-1.0, 0, 0);
+    camera.updateProjectionMatrix();
+    renderer.setSize(W(),H());
+  }
+  window.addEventListener('resize',onResize);
+
+  animate();
+
+  return { dispose(){ alive=false; if(raf) cancelAnimationFrame(raf);
+    window.removeEventListener('resize',onResize);
+    try{ renderer.dispose(); if(renderer.domElement.parentNode) renderer.domElement.parentNode.removeChild(renderer.domElement); }catch(e){}
+  }};
+}
+
+/* ===== TRẮC NGHIỆM — UI hiện đại ===== */
 function renderQuiz(s){
   stopVoice(); lastIntroVoice='';
-  const flip=s.x>CONFIG.mapWidth/2;
-  stage.className='stage'+(flip?' flip':'');
-  stage.innerHTML=`<div class="stageChar">${charVisual(s)}<div class="cname">${s.name}</div></div><div class="card" id="cardBox"></div>`;
+  stage.className='stage';
+  stage.innerHTML=`<div class="stageChar">${charVisual(s)}<div class="cname">${s.name}</div></div><div class="card cardQuiz" id="cardBox"></div>`;
   const box=document.getElementById('cardBox');
-  let html=`<span class="tag">KIỂM TRA CUỐI BÀI 3</span><h2>Ôn lại kiến thức (cần ≥ 3/4)</h2>`;
+  let html=`<span class="tag">KIỂM TRA CUỐI BÀI 3</span>
+    <h2>Ôn lại kiến thức</h2>
+    <div class="quizHead">
+      <div class="quizProg"><i id="qProgBar"></i></div>
+      <div class="quizCount"><span id="qDone">0</span>/${QUESTIONS.length} • cần ≥3</div>
+    </div>
+    <p style="font-size:12px;color:#94a3b8;margin:8px 0 16px">Chọn đáp án cho từng câu — hệ thống chấm ngay.</p>`;
   QUESTIONS.forEach((qq,qi)=>{
-    html+=`<div style="margin-bottom:18px"><p style="font-weight:700;margin-bottom:10px;color:#0a1a3a">${qi+1}. ${qq.q}</p>`;
-    qq.opts.forEach((o,oi)=> html+=`<button class="opt" data-q="${qi}" data-o="${oi}">${o}</button>`);
-    html+=`<div class="explain" id="ex${qi}">${qq.ex}</div></div>`;
+    html+=`<div class="qBlock" id="qb${qi}">
+      <div class="qTitle"><div class="qNum">${qi+1}</div><div class="qText">${qq.q}</div></div>
+      <div class="qOpts">`;
+    qq.opts.forEach((o,oi)=> html+=`<button class="opt" data-q="${qi}" data-o="${oi}"><span class="dot"></span><span>${o}</span></button>`);
+    html+=`</div><div class="explain" id="ex${qi}">${qq.ex}</div></div>`;
   });
-  html+=`<div id="quizResult" style="font-weight:800;font-size:16px;margin:10px 0"></div><div id="quizActions"></div>`;
+  html+=`<div id="quizResult"></div><div id="quizActions"></div>`;
   box.innerHTML=html;
+
   const answered={}; let score=0;
+  const progBar=document.getElementById('qProgBar'), doneEl=document.getElementById('qDone');
   box.querySelectorAll('.opt').forEach(btn=>{
     btn.onclick=()=>{
       const qi=+btn.dataset.q, oi=+btn.dataset.o;
       if(answered[qi]!==undefined) return;
       answered[qi]=oi; const correct=QUESTIONS[qi].correct;
+      const qb=document.getElementById('qb'+qi);
       box.querySelectorAll(`.opt[data-q="${qi}"]`).forEach(b=>{ if(+b.dataset.o===correct) b.classList.add('correct'); b.disabled=true; });
-      if(oi!==correct) btn.classList.add('wrong'); else score++;
-      document.getElementById('ex'+qi).style.display='block';
-      if(Object.keys(answered).length===QUESTIONS.length){
-        const pass=score>=3, res=document.getElementById('quizResult'), act=document.getElementById('quizActions');
-        res.textContent=`Kết quả: ${score}/4 — ${pass?'Đạt! Chào mừng bạn, '+PLAYER.name+' 🎊':'Chưa đạt (cần ≥ 3/4).'}`;
-        res.style.color=pass?'#0a8f7e':'#ef4444';
-        if(pass){ markDone('Q'); fireConfetti(); act.innerHTML=`<button class="close" onclick="window.__close()">Hoàn thành Bài 3 🎉</button>`; }
+      if(oi!==correct){ btn.classList.add('wrong'); qb.classList.add('done-wrong'); } else { score++; qb.classList.add('done-correct'); }
+      qb.classList.add('answered');
+      const n=Object.keys(answered).length;
+      doneEl.textContent=n; progBar.style.width=(n/QUESTIONS.length*100)+'%';
+
+      if(n===QUESTIONS.length){
+        const pass=score>=3;
+        const res=document.getElementById('quizResult'), act=document.getElementById('quizActions');
+        const ring = pass
+          ? `background:conic-gradient(#22c55e ${score/4*360}deg,#e8eef7 0)`
+          : `background:conic-gradient(#ef4444 ${score/4*360}deg,#e8eef7 0)`;
+        res.innerHTML=`<div class="quizResultBox">
+            <div class="scoreRing" style="${ring}"><div class="inner"><div class="sc">${score}/4</div><div class="sl">điểm</div></div></div>
+            <div class="resTitle" style="color:${pass?'#0a8f7e':'#ef4444'}">${pass?'🎊 Đạt yêu cầu!':'Chưa đạt'}</div>
+            <div class="resSub">${pass?('Chào mừng bạn, '+PLAYER.name+' — bạn đã hoàn thành Bài 3!'):'Cần đúng ít nhất 3/4 câu. Xem lại giải thích rồi thử lại nhé.'}</div>
+          </div>`;
+        if(pass){ markDone('Q'); fireConfetti(); act.innerHTML=`<button class="close" style="background:linear-gradient(90deg,#2dd4bf,#0a8f7e)" onclick="window.__close()">Hoàn thành Bài 3 🎉</button>`; }
         else { act.innerHTML=`<button class="close" style="background:#2dd4bf;color:#04223a" id="retryBtn">🔄 Làm lại</button><button class="close" style="background:#0a1a3a;margin-top:10px" onclick="window.__close()">↩ Thoát ra ôn lại</button>`;
           document.getElementById('retryBtn').onclick=()=>renderQuiz(s); }
       }
@@ -486,7 +721,8 @@ function markDone(id){
   }
 }
 
-window.__close=()=>{ stopVoice(); panel.style.display='none'; checkNear();
+window.__close=()=>{ stopVoice(); panel.style.display='none'; panelB.style.display='none'; checkNear();
+  if(_bScene){ _bScene.dispose(); _bScene=null; }
   if(completed>=5) toast(`🏆 ${PLAYER.name} đã hoàn thành Bài 3: Văn hóa doanh nghiệp!`); };
 
 function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.style.display='block'; clearTimeout(t._tm); t._tm=setTimeout(()=>t.style.display='none',2600); }
